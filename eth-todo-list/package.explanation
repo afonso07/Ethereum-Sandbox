@@ -1,0 +1,7 @@
+chai -> testing
+chai-as-promised -> testing promises
+chai-bignumber -> testing precision numbers
+lite-server -> Lightweight development only node server that serves a web app, opens it in the browser, refreshes when html or javascript change, injects CSS changes using sockets, and has a fallback page when a route is not found.
+nodemon -> nodemon is a tool that helps develop node.js based applications by automatically restarting the node application when file changes in the directory are detected.
+truffle-contract -> Better Ethereum contract abstraction, for Node and the browser.
+
