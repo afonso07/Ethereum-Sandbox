@@ -1,0 +1,11 @@
+.tool-bar-container{
+    position: relative;
+    height: 5vh;
+    background-color: darkslategrey;
+    color: azure;
+    display:flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size:1.5rem;
+}
