@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import styles from "../styles/TodoList.module.css";
 import detectEthereumProvider from "@metamask/detect-provider";
-import { RequestArguments } from "./type_config/metamask.types";
+import { RequestArguments, Events } from "./type_config/metamask.types";
 import Web3 from "web3";
 import { AbiItem } from "web3-utils";
 import { Contract } from "web3-eth-contract";
@@ -18,9 +18,12 @@ const TodoList = (): JSX.Element => {
     tasks?: Array<{ id: number; content: string; completed: boolean }>;
   } | null>(null);
 
-  const [formInfo, setFormInfo] = useState<{ submitText: string } | null>(null);
+  const [formInfo, setFormInfo] = useState<{
+    submitText?: string;
+    loading?: { itemID: number; loading: boolean };
+  } | null>(null);
 
-  const callTodo = async (todoList: Contract | undefined) => {
+  const callTodo = async (todoList: Contract | undefined): Promise<void> => {
     const taskCount = await todoList?.methods.taskCount().call();
     let taskArray = Array<any>();
     for (let i = 1; i <= taskCount; i++) {
@@ -29,7 +32,29 @@ const TodoList = (): JSX.Element => {
     }
 
     setBcInfo((rest) => ({ ...rest, tasks: taskArray }));
-    console.log(taskArray);
+  };
+
+  const completeTask = async (taskID: number): Promise<void> => {
+    setFormInfo({ loading: { itemID: taskID, loading: true } });
+    bcInfo?.todoList?.methods
+      .toggleCompleted(taskID)
+      .send({ from: bcInfo.account })
+      .once("receipt", (receipt: TransactionReceipt) => {
+        const event: Events.TaskCompleted =
+          receipt.events?.[Events.EventNames.TaskCompleted].returnValues;
+        let tasksLocal = bcInfo.tasks as Array<{
+          id: number;
+          content: string;
+          completed: boolean;
+        }>;
+        let idIndex = tasksLocal?.findIndex((item) => item.id == event.id);
+        tasksLocal[idIndex] = {
+          ...tasksLocal[idIndex],
+          completed: event.completed,
+        };
+        setBcInfo((rest) => ({ ...rest, tasks: tasksLocal }));
+        setFormInfo({ loading: { itemID: taskID, loading: false } });
+      });
   };
 
   useEffect(() => {
@@ -78,8 +103,8 @@ const TodoList = (): JSX.Element => {
       .send({ from: bcInfo.account })
       .once("receipt", (reciept: TransactionReceipt) => {
         console.log(reciept);
-        console.log('Im here')
-        callTodo(bcInfo.todoList)
+        setFormInfo((rest) => ({ ...rest, submitText: "" }));
+        callTodo(bcInfo.todoList);
       });
   };
 
@@ -105,15 +130,32 @@ const TodoList = (): JSX.Element => {
               placeholder="Add task..."
               required
               value={formInfo?.submitText || ""}
-              onChange={(e) => setFormInfo({ submitText: e.target.value })}
+              onChange={(e) =>
+                setFormInfo((rest) => ({ ...rest, submitText: e.target.value }))
+              }
             />
             <input type="submit" hidden={true} />
           </form>
-          {bcInfo?.tasks?.map((value, index) => (
-            <div className={styles.list_item} key={value.id}>
-              {value.content}
-            </div>
-          ))}
+          {bcInfo?.tasks?.map((value) =>
+            !(
+              formInfo?.loading?.itemID == value.id && formInfo.loading.loading
+            ) ? (
+              <div
+                className={styles.list_item}
+                key={value.id}
+                style={{
+                  textDecoration: value.completed
+                    ? "line-through"
+                    : "underline",
+                }}
+                onClick={() => completeTask(value.id)}
+              >
+                {value.content}
+              </div>
+            ) : (
+              <div>loading...</div>
+            )
+          )}
         </div>
       </div>
     </div>
