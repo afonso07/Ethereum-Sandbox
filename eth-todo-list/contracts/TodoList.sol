@@ -20,7 +20,9 @@ contract TodoList {
         bool completed;
     }
 
+    // Event interface
     event TaskCreated(uint256 id, string content, bool completed);
+    event TaskCompleted(uint256 id, bool completed);
 
     // This is a mapping of task ID to Task
     mapping(uint256 => Task) public tasks;
@@ -30,5 +32,14 @@ contract TodoList {
         taskCount++;
         tasks[taskCount] = Task(taskCount, _content, false);
         emit TaskCreated(taskCount, _content, false);
+    }
+
+    // Ints are passed by value rather than reference therefore we can't use the memory keyword
+    //https://ethereum.stackexchange.com/questions/83602/data-location-can-only-be-specified-for-array-struct-or-mapping-types-but-mem
+    function toggleCompleted(uint256 _id) public {
+        Task memory _task = tasks[_id];
+        _task.completed = !_task.completed;
+        tasks[_id] = _task;
+        emit TaskCompleted(_id, _task.completed);
     }
 }
